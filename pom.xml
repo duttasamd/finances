@@ -19,6 +19,7 @@
 		<mysql.version>8.0.30</mysql.version>
 		<sql2o.version>1.6.0</sql2o.version>
 		<logback.version>1.4.5</logback.version>
+		<yahoofinance-api.version>3.17.0</yahoofinance-api.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -53,6 +54,11 @@
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>${logback.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoofinance-api</groupId>
+			<artifactId>YahooFinanceAPI</artifactId>
+			<version>${yahoofinance-api.version}</version>
 		</dependency>
     </dependencies>
 

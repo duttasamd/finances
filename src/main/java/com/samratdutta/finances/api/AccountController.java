@@ -1,9 +1,7 @@
 package com.samratdutta.finances.api;
 
-import com.samratdutta.finances.model.Account;
-import com.samratdutta.finances.model.CurrentAccount;
-import com.samratdutta.finances.model.FixedDepositAccount;
-import com.samratdutta.finances.model.TradingAccount;
+import com.samratdutta.finances.api.model.ReallocateFund;
+import com.samratdutta.finances.model.*;
 import com.samratdutta.finances.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -93,5 +91,22 @@ public class AccountController {
         };
 
         return accountService.getAccount(type, uuid);
+    }
+
+    @PostMapping(value = "/reallocate", consumes = {"application/json"})
+    public UUID reallocateFunds(@RequestBody ReallocateFund reallocateFund) {
+        Account fromAccount = switch (reallocateFund.getFromType()) {
+            case CURRENT -> CurrentAccount.builder().uuid(reallocateFund.getFromUuid()).build();
+            case FIXED_DEPOSIT -> FixedDepositAccount.builder().uuid(reallocateFund.getFromUuid()).build();
+            case TRADING -> TradingAccount.builder().uuid(reallocateFund.getFromUuid()).build();
+        };
+
+        Account toAccount = switch (reallocateFund.getToType()) {
+            case CURRENT -> CurrentAccount.builder().uuid(reallocateFund.getToUuid()).build();
+            case TRADING -> TradingAccount.builder().uuid(reallocateFund.getToUuid()).build();
+            default -> throw new InvalidParameterException();
+        };
+
+        return accountService.reallocateFunds(fromAccount, reallocateFund.getFromAmount(), toAccount, reallocateFund.getToAmount());
     }
 }

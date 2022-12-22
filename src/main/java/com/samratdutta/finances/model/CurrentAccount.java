@@ -1,10 +1,15 @@
 package com.samratdutta.finances.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.sql2o.Query;
 
 @Data
+@SuperBuilder
+@AllArgsConstructor
 public class CurrentAccount extends Account {
     private static final String TABLE_NAME = "current_account";
     private boolean isPrimary;

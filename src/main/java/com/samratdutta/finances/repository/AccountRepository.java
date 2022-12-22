@@ -46,8 +46,8 @@ public class AccountRepository {
         }
     }
     public void addAccount(TradingAccount account) {
-        String queryText = "INSERT INTO "+ TRADING_ACCOUNT +"(uuid, name, number, currency) " +
-                "VALUES(:uuidStr, :name, :number, :currency)";
+        String queryText = "INSERT INTO "+ TRADING_ACCOUNT +"(uuid, name, number, currency, current_amount) " +
+                "VALUES(:uuidStr, :name, :number, :currency, :currentAmount)";
 
         try(var query = connection.createQuery(queryText)) {
             query.bind(account);
@@ -118,6 +118,27 @@ public class AccountRepository {
             };
 
             return account;
+        }
+    }
+
+    public void adjustCurrentAmount(Account account, double transactionValue, boolean isAdd) {
+        String accountType = switch (account.getType()) {
+            case CURRENT -> CURRENT_ACCOUNT;
+            case FIXED_DEPOSIT -> FIXED_DEPOSIT_ACCOUNT;
+            case TRADING -> TRADING_ACCOUNT;
+        };
+
+        String queryText = "UPDATE " + accountType + " SET current_amount = :current_amount" +
+                " WHERE uuid = :uuidStr";
+
+        double newCurrentAmount
+                = isAdd ? account.getCurrentAmount() + transactionValue : account.getCurrentAmount() - transactionValue;
+
+        try(var query = connection.createQuery(queryText)) {
+            query.addParameter("current_amount", newCurrentAmount);
+            query.addParameter("uuidStr", account.getUuid().toString());
+
+            query.executeUpdate();
         }
     }
 }

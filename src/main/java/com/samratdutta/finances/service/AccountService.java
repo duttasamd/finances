@@ -1,10 +1,9 @@
 package com.samratdutta.finances.service;
 
-import com.samratdutta.finances.model.Account;
-import com.samratdutta.finances.model.CurrentAccount;
-import com.samratdutta.finances.model.FixedDepositAccount;
-import com.samratdutta.finances.model.TradingAccount;
+import com.samratdutta.finances.model.*;
 import com.samratdutta.finances.repository.AccountRepository;
+import com.samratdutta.finances.repository.EventRepository;
+import com.samratdutta.finances.repository.TransactionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -70,5 +69,64 @@ public class AccountService {
             var accountRepository = new AccountRepository(connection);
             return accountRepository.getAccount(type, uuid);
         }
+    }
+
+    public UUID reallocateFunds(Account fromAccount, double fromAmount, Account toAccount, double toAmount) {
+        UUID eventUuid = UUID.randomUUID();
+        Event event = Event.builder().uuid(eventUuid).type(Event.Type.REALLOCATION).build();
+
+        Transaction fromTransaction = switch (fromAccount.getType()) {
+            case CURRENT -> CurrentAccountTransaction.builder()
+                    .uuid(UUID.randomUUID())
+                    .currentAccountUuid(fromAccount.getUuid())
+                    .eventUuid(event.getUuid())
+                    .amount(fromAmount)
+                    .build();
+            case TRADING -> TradingAccountFundTransaction.builder()
+                    .uuid(UUID.randomUUID())
+                    .tradingAccountUuid(fromAccount.getUuid())
+                    .eventUuid(event.getUuid())
+                    .amount(fromAmount)
+                    .build();
+            default -> throw new InvalidParameterException();
+        };
+
+        Transaction toTransaction = switch (toAccount.getType()) {
+            case CURRENT -> CurrentAccountTransaction.builder()
+                    .uuid(UUID.randomUUID())
+                    .currentAccountUuid(toAccount.getUuid())
+                    .eventUuid(event.getUuid())
+                    .amount(fromAmount)
+                    .build();
+            case TRADING -> TradingAccountFundTransaction.builder()
+                    .uuid(UUID.randomUUID())
+                    .tradingAccountUuid(toAccount.getUuid())
+                    .eventUuid(event.getUuid())
+                    .amount(toAmount)
+                    .build();
+
+            default -> throw new InvalidParameterException();
+        };
+
+        Sql2o financesDb = new Sql2o(dataSource);
+        try(Connection connection = financesDb.beginTransaction()) {
+            var eventRepository = new EventRepository(connection);
+            var accountRepository = new AccountRepository(connection);
+            var transactionRepository = new TransactionRepository(connection);
+
+            fromAccount = accountRepository.getAccount(fromAccount.getType(), fromAccount.getUuid());
+            toAccount = accountRepository.getAccount(toAccount.getType(), toAccount.getUuid());
+
+            accountRepository.adjustCurrentAmount(fromAccount, fromAmount, false);
+            accountRepository.adjustCurrentAmount(toAccount, toAmount, true);
+
+            eventRepository.add(event);
+            transactionRepository.add(fromTransaction);
+            transactionRepository.add(toTransaction);
+
+            connection.commit();
+        }
+
+        return eventUuid;
     }
 }

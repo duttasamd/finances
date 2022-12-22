@@ -4,15 +4,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Date;
 import java.util.UUID;
 
 @Data
 @SuperBuilder
-public class CurrentAccountTransaction extends Transaction {
-    private UUID currentAccountUuid;
+public class TradingAccountFundTransaction extends Transaction {
+    private UUID tradingAccountUuid;
     private double amount;
     public Type getType() {
-        return Type.CURRENT;
+        return Type.TRADING_FUND;
     }
 }

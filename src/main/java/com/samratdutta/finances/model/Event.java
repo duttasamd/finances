@@ -1,9 +1,15 @@
 package com.samratdutta.finances.model;
 
-import java.util.Date;
+import lombok.Builder;
+import lombok.Data;
 
+import java.util.Date;
+import java.util.UUID;
+
+@Data
+@Builder
 public class Event {
-    enum Type {
+    public enum Type {
         ADJUSTMENT_ADD_BALANCE,
         ADJUSTMENT_REMOVE_BALANCE,
         EXPENDITURE,
@@ -13,8 +19,7 @@ public class Event {
         SECURITY_SELL,
         REMITTANCE
     }
-    private int id;
+    private UUID uuid;
     private Type type;
     private Date timestamp;
-
 }

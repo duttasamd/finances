@@ -1,12 +1,16 @@
 package com.samratdutta.finances.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 import org.sql2o.Query;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Data
+@SuperBuilder
+@AllArgsConstructor
 public class TradingAccount extends Account {
     public static void addColumnMappings(Query query) {
         query.addColumnMapping("current_amount", "currentAmount");
@@ -72,8 +76,9 @@ public class TradingAccount extends Account {
 
         return holdings;
     }
-    @Override
-    public double getCurrentAmount() {
-        return getHoldings() == null ? 0 : getHoldings().stream().mapToDouble(SecurityHolding::getCurrentValuation).sum();
+
+    public double getTotalAmount() {
+        double holdingBalance = getHoldings() == null ? 0 : getHoldings().stream().mapToDouble(SecurityHolding::getCurrentValuation).sum();
+        return holdingBalance + currentAmount;
     }
 }

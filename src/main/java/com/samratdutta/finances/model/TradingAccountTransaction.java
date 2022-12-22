@@ -2,11 +2,12 @@ package com.samratdutta.finances.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
+@SuperBuilder
 public class TradingAccountTransaction extends Transaction {
     public enum Type {
         BUY,
@@ -16,4 +17,7 @@ public class TradingAccountTransaction extends Transaction {
     private UUID tradingAccountUuid;
     private double quantity;
     private double tradePrice;
+    public Transaction.Type getType() {
+        return Transaction.Type.TRADING_SECURITY;
+    }
 }
