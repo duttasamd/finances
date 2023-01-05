@@ -20,6 +20,7 @@ import java.util.UUID;
 @Slf4j
 @RestController
 @RequestMapping(path = "/account")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class AccountController {
     @Autowired
     private AccountService accountService;

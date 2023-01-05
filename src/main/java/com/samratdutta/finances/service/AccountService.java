@@ -80,13 +80,13 @@ public class AccountService {
                     .uuid(UUID.randomUUID())
                     .currentAccountUuid(fromAccount.getUuid())
                     .eventUuid(event.getUuid())
-                    .amount(fromAmount)
+                    .amount(-fromAmount)
                     .build();
             case TRADING -> TradingAccountFundTransaction.builder()
                     .uuid(UUID.randomUUID())
                     .tradingAccountUuid(fromAccount.getUuid())
                     .eventUuid(event.getUuid())
-                    .amount(fromAmount)
+                    .amount(-fromAmount)
                     .build();
             default -> throw new InvalidParameterException();
         };
@@ -96,7 +96,7 @@ public class AccountService {
                     .uuid(UUID.randomUUID())
                     .currentAccountUuid(toAccount.getUuid())
                     .eventUuid(event.getUuid())
-                    .amount(fromAmount)
+                    .amount(toAmount)
                     .build();
             case TRADING -> TradingAccountFundTransaction.builder()
                     .uuid(UUID.randomUUID())

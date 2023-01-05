@@ -13,7 +13,11 @@ import yahoofinance.YahooFinance;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.security.InvalidParameterException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 // MANAGES : trading_account_transaction and security tables
 @Service
@@ -40,7 +44,7 @@ public class SecurityHoldingService {
         security.setUuid(uuid);
 
         Sql2o financesDb = new Sql2o(dataSource);
-        try(var connection = financesDb.open()){
+        try(var connection = financesDb.beginTransaction()){
             var securityRepository = new SecurityRepository(connection);
             securityRepository.add(security);
             connection.commit();
@@ -79,12 +83,25 @@ public class SecurityHoldingService {
                 throw new NotEnoughBalanceException("Trading Account", tradingAccount.getName(), transactionValue);
             }
 
-            accountRepository.adjustCurrentAmount(tradingAccount, transactionValue, false);
             eventRepository.add(event);
+            accountRepository.adjustCurrentAmount(tradingAccount, transactionValue, false);
             tradingAccountTransactionRepository.add(tradingAccountTransaction);
             connection.commit();
 
             return eventUUID;
         }
+    }
+
+    public Map<UUID, List<SecurityHolding>> getSecurityHoldingMap() {
+        Map<UUID, List<SecurityHolding>> securityHoldingMap = new HashMap<>();
+        List<SecurityHolding> securityHoldings;
+
+        Sql2o financesDb = new Sql2o(dataSource);
+        try(var connection = financesDb.open()){
+            var transactionRepository = new TransactionRepository(connection);
+            securityHoldings = transactionRepository.list();
+        }
+
+        return securityHoldings.stream().collect(Collectors.groupingBy(x -> x.getSecurityUuid()));
     }
 }

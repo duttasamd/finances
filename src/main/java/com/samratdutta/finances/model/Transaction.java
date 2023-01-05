@@ -2,6 +2,7 @@ package com.samratdutta.finances.model;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Date;
@@ -9,6 +10,7 @@ import java.util.UUID;
 
 @Data
 @SuperBuilder
+@NoArgsConstructor
 public abstract class Transaction {
     public enum Type {
         CURRENT,

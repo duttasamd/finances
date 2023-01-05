@@ -2,6 +2,7 @@ package com.samratdutta.finances.api;
 
 import com.samratdutta.finances.model.Event;
 import com.samratdutta.finances.model.Security;
+import com.samratdutta.finances.model.SecurityHolding;
 import com.samratdutta.finances.model.TradingAccountTransaction;
 import com.samratdutta.finances.service.AccountService;
 import com.samratdutta.finances.service.SecurityHoldingService;
@@ -11,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -39,6 +42,19 @@ public class SecurityHoldingController {
 
         try {
             return securityHoldingService.buySecurity(tradingAccountTransaction);
+        } catch (Exception ex) {
+            LOGGER.error(ex.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+    }
+
+    @GetMapping("/account/trading/holdings")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<UUID, List<SecurityHolding>> getSecurityHoldingMap() {
+        LOGGER.info("GET /account/trading/holdings");
+
+        try {
+            return securityHoldingService.getSecurityHoldingMap();
         } catch (Exception ex) {
             LOGGER.error(ex.getMessage());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());

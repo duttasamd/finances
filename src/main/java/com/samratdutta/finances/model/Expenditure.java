@@ -11,6 +11,7 @@ import java.util.UUID;
 public class Expenditure {
     public enum Type {
         RESTAURANT,
+        SUBSCRIPTION,
         GROCERIES,
         INSURANCE,
         TRANSPORT,
