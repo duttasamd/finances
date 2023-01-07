@@ -1,9 +1,7 @@
 package com.samratdutta.finances.service;
 
-import com.samratdutta.finances.model.Account;
-import com.samratdutta.finances.model.CurrentAccountTransaction;
-import com.samratdutta.finances.model.Event;
-import com.samratdutta.finances.model.Expenditure;
+import com.samratdutta.finances.model.*;
+import com.samratdutta.finances.model.dto.ExpenditureSummary;
 import com.samratdutta.finances.repository.AccountRepository;
 import com.samratdutta.finances.repository.EventRepository;
 import com.samratdutta.finances.repository.ExpenditureRepository;
@@ -15,13 +13,23 @@ import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
 import javax.sql.DataSource;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.summingDouble;
 
 @Slf4j
 @Service
 public class ExpenditureService {
     @Autowired
     private DataSource dataSource;
+    @Autowired
+    BudgetService budgetService;
+
     public UUID buy(UUID currentAccountUuid, Expenditure expenditure) {
         UUID eventUUID = UUID.randomUUID();
         var event = Event.builder()
@@ -63,5 +71,49 @@ public class ExpenditureService {
         }
 
         return eventUUID;
+    }
+
+    public Map<Expenditure.Type, List<Expenditure>> list(int year, int month) {
+        Sql2o financesDb = new Sql2o(dataSource);
+        try(Connection connection = financesDb.open()) {
+            var expenditureRepository = new ExpenditureRepository(connection);
+            List<Expenditure> expenditures = expenditureRepository.list(year, month);
+
+            return expenditures.stream().collect(groupingBy(Expenditure::getType));
+        }
+    }
+
+    public ExpenditureSummary getExpenditureSummary(int year, int month) {
+        List<BudgetEntry> budgetEntries = budgetService.list(year, month);
+        Map<Expenditure.Type, List<Expenditure>> expenditureMap = list(year, month);
+
+        List<Expenditure.Type> fixedTypes = Arrays.asList(Expenditure.Type.UTILITY,
+                Expenditure.Type.INSURANCE,
+                Expenditure.Type.SUBSCRIPTION,
+                Expenditure.Type.TRANSPORT);
+
+        double budget = 0;
+        double spent = 0;
+        double remainingFixed = 0;
+
+        for (BudgetEntry budgetEntry : budgetEntries) {
+            budget += budgetEntry.getAmount();
+
+            List<Expenditure> expenditures = expenditureMap.get(budgetEntry.getType());
+            double expenditure = expenditures != null ? expenditures.stream().mapToDouble(Expenditure::getAmount).sum() : 0;
+
+            spent += expenditure;
+
+            if(fixedTypes.contains(budgetEntry.getType())) {
+                remainingFixed += budgetEntry.getAmount() - expenditure;
+            }
+        }
+
+        var expenditureSummary = new ExpenditureSummary();
+        expenditureSummary.setBudget(budget);
+        expenditureSummary.setAmountSpent(spent);
+        expenditureSummary.setRemainingFixed(remainingFixed);
+
+        return expenditureSummary;
     }
 }

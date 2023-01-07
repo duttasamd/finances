@@ -1,20 +1,17 @@
 package com.samratdutta.finances.api;
 
-import com.samratdutta.finances.api.model.ReallocateFund;
+import com.samratdutta.finances.model.dto.ReallocateFund;
 import com.samratdutta.finances.model.*;
 import com.samratdutta.finances.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -109,5 +106,19 @@ public class AccountController {
         };
 
         return accountService.reallocateFunds(fromAccount, reallocateFund.getFromAmount(), toAccount, reallocateFund.getToAmount());
+    }
+
+    @PostMapping("/{accountType}/{uuid}/adjust")
+    public UUID adjustFunds(@PathVariable(required = true) String accountType, @PathVariable(required = true) UUID uuid, double amount) {
+        Account.Type type;
+
+        type = switch (accountType) {
+            case "current" -> Account.Type.CURRENT;
+            case "fixed_deposit" -> Account.Type.FIXED_DEPOSIT;
+            case "trading" -> Account.Type.TRADING;
+            default -> throw new InvalidParameterException();
+        };
+
+        return accountService.adjustFunds(type, uuid, amount);
     }
 }

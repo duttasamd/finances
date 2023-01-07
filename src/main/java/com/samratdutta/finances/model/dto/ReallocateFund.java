@@ -1,4 +1,4 @@
-package com.samratdutta.finances.api.model;
+package com.samratdutta.finances.model.dto;
 
 import com.samratdutta.finances.model.Account;
 import lombok.Data;

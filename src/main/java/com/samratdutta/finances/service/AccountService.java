@@ -129,4 +129,47 @@ public class AccountService {
 
         return eventUuid;
     }
+
+    public UUID adjustFunds(Account.Type type, UUID uuid, double amount) {
+        UUID eventUuid = UUID.randomUUID();
+        Event.Type eventType = amount < 0 ? Event.Type.ADJUSTMENT_REMOVE_BALANCE :Event.Type.ADJUSTMENT_ADD_BALANCE;
+        Event event = Event.builder().uuid(eventUuid).type(eventType).build();
+
+        Transaction transaction = switch (type) {
+            case CURRENT -> CurrentAccountTransaction.builder()
+                    .uuid(UUID.randomUUID())
+                    .currentAccountUuid(uuid)
+                    .eventUuid(event.getUuid())
+                    .amount(amount)
+                    .build();
+            case TRADING -> TradingAccountFundTransaction.builder()
+                    .uuid(UUID.randomUUID())
+                    .tradingAccountUuid(uuid)
+                    .eventUuid(event.getUuid())
+                    .amount(amount)
+                    .build();
+            default -> throw new InvalidParameterException();
+        };
+
+        Sql2o financesDb = new Sql2o(dataSource);
+        try(Connection connection = financesDb.beginTransaction()) {
+            var eventRepository = new EventRepository(connection);
+            var accountRepository = new AccountRepository(connection);
+            var transactionRepository = new TransactionRepository(connection);
+
+            Account account = accountRepository.getAccount(type, uuid);
+
+            if(account == null) {
+                throw new InvalidParameterException("Account not found.");
+            }
+
+            eventRepository.add(event);
+            transactionRepository.add(transaction);
+            accountRepository.adjustCurrentAmount(account, Math.abs(amount), amount > 0);
+
+            connection.commit();
+        }
+
+        return eventUuid;
+    }
 }
