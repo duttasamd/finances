@@ -1,6 +1,8 @@
 package com.samratdutta.finances.service;
 
+import com.samratdutta.finances.helper.exception.NotFoundException;
 import com.samratdutta.finances.model.*;
+import com.samratdutta.finances.model.dto.ExpenditureDTO;
 import com.samratdutta.finances.model.dto.ExpenditureSummary;
 import com.samratdutta.finances.repository.AccountRepository;
 import com.samratdutta.finances.repository.EventRepository;
@@ -73,19 +75,19 @@ public class ExpenditureService {
         return eventUUID;
     }
 
-    public Map<Expenditure.Type, List<Expenditure>> list(int year, int month) {
+    public Map<Expenditure.Type, List<ExpenditureDTO>> list(int year, int month) {
         Sql2o financesDb = new Sql2o(dataSource);
         try(Connection connection = financesDb.open()) {
             var expenditureRepository = new ExpenditureRepository(connection);
-            List<Expenditure> expenditures = expenditureRepository.list(year, month);
+            List<ExpenditureDTO> expenditures = expenditureRepository.list(year, month);
 
-            return expenditures.stream().collect(groupingBy(Expenditure::getType));
+            return expenditures.stream().collect(groupingBy(ExpenditureDTO::getType));
         }
     }
 
     public ExpenditureSummary getExpenditureSummary(int year, int month) {
         List<BudgetEntry> budgetEntries = budgetService.list(year, month);
-        Map<Expenditure.Type, List<Expenditure>> expenditureMap = list(year, month);
+        Map<Expenditure.Type, List<ExpenditureDTO>> expenditureMap = list(year, month);
 
         List<Expenditure.Type> fixedTypes = Arrays.asList(Expenditure.Type.UTILITY,
                 Expenditure.Type.INSURANCE,
@@ -99,8 +101,8 @@ public class ExpenditureService {
         for (BudgetEntry budgetEntry : budgetEntries) {
             budget += budgetEntry.getAmount();
 
-            List<Expenditure> expenditures = expenditureMap.get(budgetEntry.getType());
-            double expenditure = expenditures != null ? expenditures.stream().mapToDouble(Expenditure::getAmount).sum() : 0;
+            List<ExpenditureDTO> expenditures = expenditureMap.get(budgetEntry.getType());
+            double expenditure = expenditures != null ? expenditures.stream().mapToDouble(ExpenditureDTO::getAmount).sum() : 0;
 
             spent += expenditure;
 
@@ -115,5 +117,33 @@ public class ExpenditureService {
         expenditureSummary.setRemainingFixed(remainingFixed);
 
         return expenditureSummary;
+    }
+
+    public boolean removeExpenditure(UUID uuid) throws NotFoundException {
+        Sql2o financesDb = new Sql2o(dataSource);
+        try(Connection connection = financesDb.beginTransaction()) {
+            var eventRepository = new EventRepository(connection);
+            var accountRepository = new AccountRepository(connection);
+            var expenditureRepository = new ExpenditureRepository(connection);
+            var transactionRepository = new TransactionRepository(connection);
+
+            var expenditure = expenditureRepository.get(uuid);
+            if(expenditure == null) {
+                throw new NotFoundException("Expenditure Not Found", uuid);
+            }
+             var transactionList
+                    = transactionRepository.getCurrentAccountTransactionList(expenditure.getEventUuid());
+
+            for (var transaction:transactionList) {
+                CurrentAccount currentAccount = (CurrentAccount) accountRepository.getAccount(Account.Type.CURRENT, transaction.getCurrentAccountUuid());
+                accountRepository.adjustCurrentAmount(currentAccount, Math.abs(transaction.getAmount()), true);
+                transactionRepository.remove(transaction);
+                expenditureRepository.remove(uuid);
+            }
+
+            eventRepository.remove(expenditure.getUuid());
+            connection.commit();
+        }
+        return true;
     }
 }

@@ -134,11 +134,19 @@ public class AccountRepository {
         double newCurrentAmount
                 = isAdd ? account.getCurrentAmount() + transactionValue : account.getCurrentAmount() - transactionValue;
 
+        LOGGER.info("Current Amount : {}", account.getCurrentAmount());
+        LOGGER.info("Transaction Value : {}", transactionValue);
+        LOGGER.info("New Amount : {}", newCurrentAmount);
+
+
         try(var query = connection.createQuery(queryText)) {
             query.addParameter("current_amount", newCurrentAmount);
             query.addParameter("uuidStr", account.getUuid().toString());
 
             query.executeUpdate();
         }
+    }
+    public void removeEvent(UUID eventUuid) {
+
     }
 }

@@ -3,7 +3,9 @@ package com.samratdutta.finances.repository;
 import com.samratdutta.finances.model.*;
 import org.sql2o.Connection;
 
+import java.security.InvalidParameterException;
 import java.util.List;
+import java.util.UUID;
 
 public class TransactionRepository {
     private final Connection connection;
@@ -73,6 +75,31 @@ public class TransactionRepository {
 
         try(var query = connection.createQuery(queryText)) {
             return query.executeAndFetch(SecurityHolding.class);
+        }
+    }
+
+    public List<CurrentAccountTransaction> getCurrentAccountTransactionList(UUID eventUuid) {
+        String queryText = "SELECT * from current_account_transaction WHERE event_uuid = :eventUuidStr";
+
+        try(var query = connection.createQuery(queryText)) {
+            query.addParameter("eventUuidStr", eventUuid.toString());
+            query.addColumnMapping("event_uuid", "eventUuid");
+            query.addColumnMapping("current_account_uuid", "currentAccountUuid");
+
+            return query.executeAndFetch(CurrentAccountTransaction.class);
+        }
+    }
+
+    public void remove(Transaction transaction) {
+        String queryText = "DELETE FROM " + switch (transaction.getType()) {
+            case CURRENT -> "current_account_transaction";
+            case TRADING_SECURITY -> "trading_account_transaction";
+            case TRADING_FUND -> "trading_account_fund_transaction";
+        } + " WHERE uuid = :uuidStr";
+
+        try(var query = connection.createQuery(queryText)) {
+            query.addParameter("uuidStr", transaction.getUuid().toString());
+            query.executeUpdate();
         }
     }
 }

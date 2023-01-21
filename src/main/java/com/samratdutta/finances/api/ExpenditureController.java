@@ -1,9 +1,11 @@
 package com.samratdutta.finances.api;
 
+import com.samratdutta.finances.helper.exception.NotFoundException;
 import com.samratdutta.finances.model.BudgetEntry;
 import com.samratdutta.finances.model.Expenditure;
 import com.samratdutta.finances.model.TradingAccountTransaction;
 import com.samratdutta.finances.model.dto.BudgetExpenditure;
+import com.samratdutta.finances.model.dto.ExpenditureDTO;
 import com.samratdutta.finances.model.dto.ExpenditureSummary;
 import com.samratdutta.finances.service.BudgetService;
 import com.samratdutta.finances.service.ExpenditureService;
@@ -47,15 +49,15 @@ public class ExpenditureController {
         List<BudgetExpenditure> budgetExpenditures = new ArrayList<>();
 
         try {
-            Map<Expenditure.Type, List<Expenditure>> expenditureMap = expenditureService.list(year, month);
+            Map<Expenditure.Type, List<ExpenditureDTO>> expenditureMap = expenditureService.list(year, month);
             List<BudgetEntry> budgetEntries = budgetService.list(year, month);
 
             for (BudgetEntry budgetEntry : budgetEntries) {
-                List<Expenditure> expenditures = expenditureMap.get(budgetEntry.getType());
+                List<ExpenditureDTO> expenditures = expenditureMap.get(budgetEntry.getType());
                 if(expenditures == null)
                     expenditures = new ArrayList<>();
 
-                double amountSpent = expenditures.stream().mapToDouble(Expenditure::getAmount).sum();
+                double amountSpent = expenditures.stream().mapToDouble(ExpenditureDTO::getAmount).sum();
 
                 BudgetExpenditure budgetExpenditure =
                         BudgetExpenditure.builder()
@@ -81,5 +83,10 @@ public class ExpenditureController {
         LOGGER.info("GET /expenditure/{}/{}", year, month);
 
         return expenditureService.getExpenditureSummary(year, month);
+    }
+
+    @DeleteMapping("/expenditure/{uuid}")
+    public boolean removeExpenditure(@PathVariable UUID uuid) throws NotFoundException {
+        return expenditureService.removeExpenditure(uuid);
     }
 }

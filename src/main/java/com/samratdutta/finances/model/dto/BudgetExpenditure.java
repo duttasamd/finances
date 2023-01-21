@@ -16,5 +16,5 @@ public class BudgetExpenditure {
     private Expenditure.Type type;
     private double budget;
     private double spent;
-    List<Expenditure> expenditures;
+    List<ExpenditureDTO> expenditures;
 }

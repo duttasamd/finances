@@ -1,9 +1,11 @@
 package com.samratdutta.finances.repository;
 
 import com.samratdutta.finances.model.Expenditure;
+import com.samratdutta.finances.model.dto.ExpenditureDTO;
 import org.sql2o.Connection;
 
 import java.util.List;
+import java.util.UUID;
 
 public class ExpenditureRepository {
     private Connection connection;
@@ -24,14 +26,37 @@ public class ExpenditureRepository {
         }
     }
 
-    public List<Expenditure> list(int year, int month) {
-        String queryText = "SELECT * from expenditure WHERE MONTH(timestamp) = :month AND YEAR(timestamp) = :year";
+    public List<ExpenditureDTO> list(int year, int month) {
+        String queryText = "SELECT current_account.name as account, expenditure.* from expenditure " +
+                "JOIN current_account_transaction ON current_account_transaction.event_uuid = expenditure.eventUuid " +
+                "JOIN current_account ON current_account.uuid = current_account_transaction.current_account_uuid " +
+                "WHERE MONTH(expenditure.timestamp) = :month AND YEAR(expenditure.timestamp) = :year " +
+                "ORDER BY expenditure.timestamp DESC";
 
         try(var query = connection.createQuery(queryText)) {
             query.addParameter("month", month);
             query.addParameter("year", year);
 
-            return query.executeAndFetch(Expenditure.class);
+            return query.executeAndFetch(ExpenditureDTO.class);
+        }
+    }
+
+    public Expenditure get(UUID uuid) {
+        String queryText = "SELECT * FROM expenditure WHERE uuid = :uuidStr";
+
+        try(var query = connection.createQuery(queryText)) {
+            query.addParameter("uuidStr", uuid.toString());
+
+            return query.executeAndFetchFirst(Expenditure.class);
+        }
+    }
+
+    public void remove(UUID uuid) {
+        String queryText = "DELETE FROM expenditure WHERE uuid = :uuidStr";
+
+        try(var query = connection.createQuery(queryText)) {
+            query.addParameter("uuidStr", uuid.toString());
+            query.executeUpdate();
         }
     }
 }
