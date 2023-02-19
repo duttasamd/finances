@@ -10,6 +10,7 @@ import java.util.UUID;
 public class ExpenditureDTO {
     private UUID uuid;
     private UUID eventUuid;
+    private UUID budgetUuid;
     private Expenditure.Type type;
     private double amount;
     private String comment;

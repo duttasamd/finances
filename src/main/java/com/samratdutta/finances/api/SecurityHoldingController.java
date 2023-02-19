@@ -18,6 +18,7 @@ import java.util.UUID;
 
 @Slf4j
 @RestController
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class SecurityHoldingController {
     @Autowired
     private SecurityHoldingService securityHoldingService;
@@ -55,6 +56,18 @@ public class SecurityHoldingController {
 
         try {
             return securityHoldingService.getSecurityHoldingMap();
+        } catch (Exception ex) {
+            LOGGER.error(ex.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+    }
+
+    @GetMapping("/quote/{symbol}")
+    public double getQuote(@PathVariable String symbol) {
+        LOGGER.info("GET /quote/{}", symbol);
+
+        try {
+            return securityHoldingService.getQuote(symbol);
         } catch (Exception ex) {
             LOGGER.error(ex.getMessage());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());

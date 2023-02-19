@@ -75,19 +75,21 @@ public class ExpenditureService {
         return eventUUID;
     }
 
-    public Map<Expenditure.Type, List<ExpenditureDTO>> list(int year, int month) {
+    public Map<Expenditure.Type, List<ExpenditureDTO>> list(int year, int month, Budget.Type type) {
         Sql2o financesDb = new Sql2o(dataSource);
         try(Connection connection = financesDb.open()) {
             var expenditureRepository = new ExpenditureRepository(connection);
-            List<ExpenditureDTO> expenditures = expenditureRepository.list(year, month);
+            List<ExpenditureDTO> expenditures = expenditureRepository.list(year, month, type);
+
+            LOGGER.info("{} {}", expenditures.size(), expenditures);
 
             return expenditures.stream().collect(groupingBy(ExpenditureDTO::getType));
         }
     }
 
-    public ExpenditureSummary getExpenditureSummary(int year, int month) {
+    public ExpenditureSummary getExpenditureSummary(int year, int month, Budget.Type budgetType) {
         List<BudgetEntry> budgetEntries = budgetService.list(year, month);
-        Map<Expenditure.Type, List<ExpenditureDTO>> expenditureMap = list(year, month);
+        Map<Expenditure.Type, List<ExpenditureDTO>> expenditureMap = list(year, month, budgetType);
 
         List<Expenditure.Type> fixedTypes = Arrays.asList(Expenditure.Type.UTILITY,
                 Expenditure.Type.INSURANCE,
@@ -111,9 +113,11 @@ public class ExpenditureService {
             }
         }
 
+        remainingFixed = remainingFixed >= 0 ? remainingFixed : 0;
+
         var expenditureSummary = new ExpenditureSummary();
         expenditureSummary.setBudget(budget);
-        expenditureSummary.setAmountSpent(spent);
+        expenditureSummary.setVariableSpent(spent);
         expenditureSummary.setRemainingFixed(remainingFixed);
 
         return expenditureSummary;

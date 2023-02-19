@@ -104,4 +104,15 @@ public class SecurityHoldingService {
 
         return securityHoldings.stream().collect(Collectors.groupingBy(x -> x.getSecurityUuid()));
     }
+
+    public double getQuote(String symbol) {
+        Stock stock;
+        try {
+            stock = YahooFinance.get(symbol);
+        } catch (IOException e) {
+            throw new InvalidParameterException("Symbol not found");
+        }
+
+        return stock.getQuote().getPrice().doubleValue();
+    }
 }

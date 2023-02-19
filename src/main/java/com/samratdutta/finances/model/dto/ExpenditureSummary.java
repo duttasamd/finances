@@ -5,7 +5,8 @@ import lombok.Data;
 
 @Data
 public class ExpenditureSummary {
-    private double amountSpent;
+    private double fixedSpent;
+    private double variableSpent;
     private double budget;
     private double remainingFixed;
 }

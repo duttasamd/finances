@@ -1,6 +1,7 @@
 package com.samratdutta.finances.api;
 
 import com.samratdutta.finances.helper.exception.NotFoundException;
+import com.samratdutta.finances.model.Budget;
 import com.samratdutta.finances.model.BudgetEntry;
 import com.samratdutta.finances.model.Expenditure;
 import com.samratdutta.finances.model.TradingAccountTransaction;
@@ -44,12 +45,12 @@ public class ExpenditureController {
     }
 
     @GetMapping("/expenditure/{year}/{month}")
-    public List<BudgetExpenditure> getExpenditureMap(@PathVariable int year, @PathVariable int month) {
+    public List<BudgetExpenditure> getMonthlyExpenditureMap(@PathVariable int year, @PathVariable int month) {
         LOGGER.info("GET /expenditure/{}/{}", year, month);
         List<BudgetExpenditure> budgetExpenditures = new ArrayList<>();
 
         try {
-            Map<Expenditure.Type, List<ExpenditureDTO>> expenditureMap = expenditureService.list(year, month);
+            Map<Expenditure.Type, List<ExpenditureDTO>> expenditureMap = expenditureService.list(year, month, Budget.Type.MONTHLY);
             List<BudgetEntry> budgetEntries = budgetService.list(year, month);
 
             for (BudgetEntry budgetEntry : budgetEntries) {
@@ -79,10 +80,10 @@ public class ExpenditureController {
     }
 
     @GetMapping("/expenditure/summary/{year}/{month}")
-    public ExpenditureSummary getExpenditureSummary(@PathVariable int year, @PathVariable int month) {
+    public ExpenditureSummary getMonthlyExpenditureSummary(@PathVariable int year, @PathVariable int month) {
         LOGGER.info("GET /expenditure/{}/{}", year, month);
 
-        return expenditureService.getExpenditureSummary(year, month);
+        return expenditureService.getExpenditureSummary(year, month, Budget.Type.MONTHLY);
     }
 
     @DeleteMapping("/expenditure/{uuid}")
