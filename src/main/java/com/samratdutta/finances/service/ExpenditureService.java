@@ -37,12 +37,14 @@ public class ExpenditureService {
         var event = Event.builder()
                 .uuid(eventUUID)
                 .type(Event.Type.EXPENDITURE)
+                .timestamp(expenditure.getTimestamp())
                 .build();
 
         var currentAccountTransaction = CurrentAccountTransaction.builder()
                 .uuid(UUID.randomUUID())
                 .currentAccountUuid(currentAccountUuid)
                 .eventUuid(eventUUID)
+                .timestamp(expenditure.getTimestamp())
                 .amount(-expenditure.getAmount()) // NEGATIVE OF THE AMOUNT
                 .build();
 

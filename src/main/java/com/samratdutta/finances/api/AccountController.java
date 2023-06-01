@@ -5,14 +5,13 @@ import com.samratdutta.finances.model.*;
 import com.samratdutta.finances.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.InvalidParameterException;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @RestController
@@ -93,6 +92,9 @@ public class AccountController {
 
     @PostMapping(value = "/reallocate", consumes = {"application/json"})
     public UUID reallocateFunds(@RequestBody ReallocateFund reallocateFund) {
+        if(reallocateFund.getTimestamp().isEmpty())
+            reallocateFund.setTimestamp(Optional.of(new Date()));
+
         Account fromAccount = switch (reallocateFund.getFromType()) {
             case CURRENT -> CurrentAccount.builder().uuid(reallocateFund.getFromUuid()).build();
             case FIXED_DEPOSIT -> FixedDepositAccount.builder().uuid(reallocateFund.getFromUuid()).build();
@@ -105,11 +107,20 @@ public class AccountController {
             default -> throw new InvalidParameterException();
         };
 
-        return accountService.reallocateFunds(fromAccount, reallocateFund.getFromAmount(), toAccount, reallocateFund.getToAmount());
+        return accountService.reallocateFunds(fromAccount,
+                reallocateFund.getFromAmount(),
+                toAccount,
+                reallocateFund.getToAmount(),
+                reallocateFund.getTimestamp().orElse(new Date())
+        );
     }
 
     @PostMapping("/{accountType}/{uuid}/adjust")
-    public UUID adjustFunds(@PathVariable(required = true) String accountType, @PathVariable(required = true) UUID uuid, double amount) {
+    public UUID adjustFunds(@PathVariable(required = true) String accountType,
+                            @PathVariable(required = true) UUID uuid,
+                            double amount,
+                            @DateTimeFormat(pattern= "yyyy-MM-dd")
+                            Date timestamp) {
         Account.Type type;
 
         type = switch (accountType) {
@@ -119,6 +130,6 @@ public class AccountController {
             default -> throw new InvalidParameterException();
         };
 
-        return accountService.adjustFunds(type, uuid, amount);
+        return accountService.adjustFunds(type, uuid, amount, timestamp);
     }
 }

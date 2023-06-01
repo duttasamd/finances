@@ -13,11 +13,12 @@ public class EventRepository {
 
     public void add(Event event) {
         String queryText = "INSERT INTO event(uuid, type, timestamp) " +
-                "VALUES(:uuidStr, :type, NOW())";
+                "VALUES(:uuidStr, :type, :timestamp)";
 
         try(var query = connection.createQuery(queryText)) {
             query.addParameter("uuidStr", event.getUuid().toString());
             query.addParameter("type", event.getType().name());
+            query.addParameter("timestamp", event.getTimestamp());
             query.executeUpdate();
         }
     }

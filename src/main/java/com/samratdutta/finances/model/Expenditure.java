@@ -22,6 +22,7 @@ public class Expenditure {
     }
     private UUID uuid;
     private UUID eventUuid;
+    private UUID budgetUuid;
     private Type type;
     private double amount;
     private String comment;

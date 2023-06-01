@@ -4,7 +4,6 @@ import com.samratdutta.finances.helper.exception.NotFoundException;
 import com.samratdutta.finances.model.Budget;
 import com.samratdutta.finances.model.BudgetEntry;
 import com.samratdutta.finances.model.Expenditure;
-import com.samratdutta.finances.model.TradingAccountTransaction;
 import com.samratdutta.finances.model.dto.BudgetExpenditure;
 import com.samratdutta.finances.model.dto.ExpenditureDTO;
 import com.samratdutta.finances.model.dto.ExpenditureSummary;
@@ -16,11 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Slf4j
 @RestController
@@ -37,6 +32,8 @@ public class ExpenditureController {
         LOGGER.info("PUT /current/{}/buy : {}", currentAccountUuid, expenditure);
 
         try {
+            if(expenditure.getTimestamp() == null)
+                expenditure.setTimestamp(new Date());
             return expenditureService.buy(currentAccountUuid, expenditure);
         } catch (Exception ex) {
             LOGGER.error(ex.getMessage());

@@ -1,10 +1,13 @@
 package com.samratdutta.finances.repository;
 
 import com.samratdutta.finances.model.*;
+import com.samratdutta.finances.model.dto.DailySummary;
 import org.sql2o.Connection;
 
 import java.security.InvalidParameterException;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class TransactionRepository {
@@ -39,13 +42,14 @@ public class TransactionRepository {
     public void add(CurrentAccountTransaction currentAccountTransaction) {
         String queryText = "INSERT INTO current_account_transaction(uuid, event_uuid, current_account_uuid, " +
                 "amount, timestamp) " +
-                "VALUES(:uuidStr, :eventUuidStr, :currentAccountUuidStr, :amount, NOW())";
+                "VALUES(:uuidStr, :eventUuidStr, :currentAccountUuidStr, :amount, :timestamp)";
 
         try(var query = connection.createQuery(queryText)) {
             query.addParameter("uuidStr", currentAccountTransaction.getUuid().toString());
             query.addParameter("eventUuidStr", currentAccountTransaction.getEventUuid().toString());
             query.addParameter("currentAccountUuidStr", currentAccountTransaction.getCurrentAccountUuid().toString());
             query.addParameter("amount", currentAccountTransaction.getAmount());
+            query.addParameter("timestamp", currentAccountTransaction.getTimestamp());
             query.executeUpdate();
         }
     }
@@ -90,6 +94,27 @@ public class TransactionRepository {
         }
     }
 
+    public List<CurrentAccountTransaction> getCurrentAccountTransactions() {
+        String queryText = "SELECT * from current_account_transaction " +
+                "ORDER BY timestamp ASC";
+
+        try(var query = connection.createQuery(queryText)) {
+            return query.executeAndFetch(CurrentAccountTransaction.class);
+        }
+    }
+
+    public List<CurrentAccountTransaction> getCurrentAccountTransactions(UUID currentAccountUuid) {
+        String queryText = "SELECT * from current_account_transaction " +
+                "WHERE current_account_uuid = :currentAccountUuidStr " +
+                "ORDER BY timestamp ASC";
+
+        try(var query = connection.createQuery(queryText)) {
+            query.addParameter("currentAccountUuidStr", currentAccountUuid.toString());
+
+            return query.executeAndFetch(CurrentAccountTransaction.class);
+        }
+    }
+
     public void remove(Transaction transaction) {
         String queryText = "DELETE FROM " + switch (transaction.getType()) {
             case CURRENT -> "current_account_transaction";
@@ -101,5 +126,46 @@ public class TransactionRepository {
             query.addParameter("uuidStr", transaction.getUuid().toString());
             query.executeUpdate();
         }
+    }
+
+    public List<DailySummary> getDailyTotalSummary(Account.Type type, UUID accountUuid) {
+        return switch (type) {
+            case CURRENT -> getCurrentAccountDailyTotalSummary(accountUuid);
+            case TRADING -> getTradingAccountDailyTotalSummary(accountUuid);
+            case FIXED_DEPOSIT -> getFixedAccountDailyTotalSummary(accountUuid);
+        };
+    }
+
+    public List<DailySummary> getCurrentAccountDailyTotalSummary(UUID currentAccountUuid) {
+        String preSql= "SET @csum := 0";
+        String sql = """
+                    SELECT date as date_str, total, (@csum := @csum + total) as closing_balance
+                        FROM (
+                         select DATE(current_account_transaction.timestamp) as date, sum(current_account_transaction.amount)  as total
+                            FROM financesdb.current_account_transaction
+                            join current_account on current_account_uuid = current_account.uuid
+                            where current_account.uuid = :currentAccountUuidStr
+                            group by DATE(current_account_transaction.timestamp)
+                            order by DATE(current_account_transaction.timestamp)
+                        ) as temp
+                    order by date
+                """;
+        try(
+            var preQuery = connection.createQuery(preSql);
+            var query = connection.createQuery(sql)) {
+            query.setAutoDeriveColumnNames(true);
+            query.addParameter("currentAccountUuidStr", currentAccountUuid.toString());
+
+            preQuery.executeUpdate();
+            return query.executeAndFetch(DailySummary.class);
+        }
+    }
+
+    public List<DailySummary> getTradingAccountDailyTotalSummary(UUID accountUuid) {
+        return null;
+    }
+
+    public List<DailySummary> getFixedAccountDailyTotalSummary(UUID accountUuid) {
+        return null;
     }
 }

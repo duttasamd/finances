@@ -6,6 +6,7 @@ import com.samratdutta.finances.repository.EventRepository;
 import com.samratdutta.finances.repository.TransactionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Service;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
@@ -71,21 +72,27 @@ public class AccountService {
         }
     }
 
-    public UUID reallocateFunds(Account fromAccount, double fromAmount, Account toAccount, double toAmount) {
+    public UUID reallocateFunds(Account fromAccount, double fromAmount, Account toAccount, double toAmount, Date timestamp) {
         UUID eventUuid = UUID.randomUUID();
-        Event event = Event.builder().uuid(eventUuid).type(Event.Type.REALLOCATION).build();
+        Event event = Event.builder()
+                .uuid(eventUuid)
+                .type(Event.Type.REALLOCATION)
+                .timestamp(timestamp)
+                .build();
 
         Transaction fromTransaction = switch (fromAccount.getType()) {
             case CURRENT -> CurrentAccountTransaction.builder()
                     .uuid(UUID.randomUUID())
                     .currentAccountUuid(fromAccount.getUuid())
                     .eventUuid(event.getUuid())
+                    .timestamp(timestamp)
                     .amount(-fromAmount)
                     .build();
             case TRADING -> TradingAccountFundTransaction.builder()
                     .uuid(UUID.randomUUID())
                     .tradingAccountUuid(fromAccount.getUuid())
                     .eventUuid(event.getUuid())
+                    .timestamp(timestamp)
                     .amount(-fromAmount)
                     .build();
             default -> throw new InvalidParameterException();
@@ -96,12 +103,14 @@ public class AccountService {
                     .uuid(UUID.randomUUID())
                     .currentAccountUuid(toAccount.getUuid())
                     .eventUuid(event.getUuid())
+                    .timestamp(timestamp)
                     .amount(toAmount)
                     .build();
             case TRADING -> TradingAccountFundTransaction.builder()
                     .uuid(UUID.randomUUID())
                     .tradingAccountUuid(toAccount.getUuid())
                     .eventUuid(event.getUuid())
+                    .timestamp(timestamp)
                     .amount(toAmount)
                     .build();
 
@@ -130,22 +139,26 @@ public class AccountService {
         return eventUuid;
     }
 
-    public UUID adjustFunds(Account.Type type, UUID uuid, double amount) {
+    public UUID adjustFunds(Account.Type type, UUID uuid, double amount, @DateTimeFormat(pattern= "yyyy-MM-dd") Date timestamp) {
+        if(timestamp == null)
+            timestamp = new Date();
         UUID eventUuid = UUID.randomUUID();
         Event.Type eventType = amount < 0 ? Event.Type.ADJUSTMENT_REMOVE_BALANCE :Event.Type.ADJUSTMENT_ADD_BALANCE;
-        Event event = Event.builder().uuid(eventUuid).type(eventType).build();
+        Event event = Event.builder().uuid(eventUuid).type(eventType).timestamp(timestamp).build();
 
         Transaction transaction = switch (type) {
             case CURRENT -> CurrentAccountTransaction.builder()
                     .uuid(UUID.randomUUID())
                     .currentAccountUuid(uuid)
                     .eventUuid(event.getUuid())
+                    .timestamp(timestamp)
                     .amount(amount)
                     .build();
             case TRADING -> TradingAccountFundTransaction.builder()
                     .uuid(UUID.randomUUID())
                     .tradingAccountUuid(uuid)
                     .eventUuid(event.getUuid())
+                    .timestamp(timestamp)
                     .amount(amount)
                     .build();
             default -> throw new InvalidParameterException();

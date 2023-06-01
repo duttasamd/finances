@@ -62,6 +62,19 @@ public class SecurityHoldingController {
         }
     }
 
+    @GetMapping("/quote/EURINR=X")
+    public double getQuote() {
+        LOGGER.info("GET /quote/EURINR=X");
+        double value = 90;
+        try{
+            value = securityHoldingService.getQuote("EURINR=X");
+        } catch (Exception ex) {
+            LOGGER.error(ex.getMessage());
+            //Pass
+        }
+        return value;
+    }
+
     @GetMapping("/quote/{symbol}")
     public double getQuote(@PathVariable String symbol) {
         LOGGER.info("GET /quote/{}", symbol);

@@ -19,12 +19,13 @@ public class ExpenditureRepository {
     public void add(Expenditure expenditure) {
         String queryText = "INSERT INTO expenditure(uuid, eventUuid, type, amount, " +
                 "currency, comment, timestamp) " +
-                "VALUES(:uuidStr, :eventUuidStr, :type, :amount, :currency, :comment, NOW())";
+                "VALUES(:uuidStr, :eventUuidStr, :type, :amount, :currency, :comment, :timestamp)";
 
         try(var query = connection.createQuery(queryText)) {
             query.bind(expenditure);
             query.addParameter("uuidStr", expenditure.getUuid().toString());
             query.addParameter("eventUuidStr", expenditure.getEventUuid().toString());
+            query.addParameter("timestamp", expenditure.getTimestamp());
             query.executeUpdate();
         }
     }

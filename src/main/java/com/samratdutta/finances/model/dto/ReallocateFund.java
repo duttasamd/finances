@@ -2,7 +2,10 @@ package com.samratdutta.finances.model.dto;
 
 import com.samratdutta.finances.model.Account;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
+import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
 
 @Data
@@ -13,5 +16,8 @@ public class ReallocateFund {
     private UUID toUuid;
     private double fromAmount;
     private double toAmount;
+
+    @DateTimeFormat(pattern= "yyyy-MM-dd")
+    private Optional<Date> timestamp;
 
 }

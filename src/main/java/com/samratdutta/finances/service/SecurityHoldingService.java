@@ -102,7 +102,7 @@ public class SecurityHoldingService {
             securityHoldings = transactionRepository.list();
         }
 
-        return securityHoldings.stream().collect(Collectors.groupingBy(x -> x.getSecurityUuid()));
+        return securityHoldings.stream().collect(Collectors.groupingBy(SecurityHolding::getSecurityUuid));
     }
 
     public double getQuote(String symbol) {
